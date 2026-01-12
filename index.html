@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLINK // OS - V2.2 ULTRA</title>
+    <title>BLINK // OS - V2.5 PRO</title>
     <style>
         :root {
             --bg: #020502;
@@ -16,404 +16,608 @@
             --sidebar-w: 280px;
         }
 
-        /* --- THEMES --- */
-        body.theme-red { --accent: #ff0000; --border: rgba(255, 0, 0, 0.3); --panel: rgba(20, 10, 10, 0.95); --ui-glow: 0 0 15px rgba(255, 0, 0, 0.2); }
-        body.theme-blue { --accent: #00f2ff; --border: rgba(0, 242, 255, 0.3); --panel: rgba(5, 15, 25, 0.95); --ui-glow: 0 0 15px rgba(0, 242, 255, 0.2); }
-        body.theme-gold { --accent: #ffdf00; --border: rgba(255, 223, 0, 0.3); --panel: rgba(25, 20, 5, 0.95); --ui-glow: 0 0 15px rgba(255, 223, 0, 0.2); }
-        body.theme-void { --accent: #ffffff; --bg: #000000; --border: rgba(255, 255, 255, 0.5); --ui-glow: 0 0 25px rgba(255, 255, 255, 0.4); }
-
         * { box-sizing: border-box; }
         body, html {
             margin: 0; padding: 0; height: 100%;
             background: var(--bg); color: var(--text);
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
-            transition: background 0.5s ease;
         }
 
         #bg-canvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-        
-        /* --- AUTH SCREEN --- */
-        #auth-screen {
-            position: fixed; inset: 0; z-index: 9999;
-            background: radial-gradient(circle at center, #0a1a0a 0%, #000 100%);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .auth-box {
-            background: var(--panel); border: 1px solid var(--accent);
-            padding: 40px; border-radius: 2px; width: 400px;
-            text-align: center; box-shadow: var(--ui-glow);
-            backdrop-filter: blur(10px);
-        }
+        .scanline { position: fixed; inset: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%); background-size: 100% 4px; pointer-events: none; z-index: 10000; opacity: 0.15; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glitch { 0% { text-shadow: 2px 0 red, -2px 0 blue; } 50% { text-shadow: -2px 0 red, 2px 0 blue; } 100% { text-shadow: 2px 0 red, -2px 0 blue; } }
+        @keyframes pulse { 0% { box-shadow: 0 0 5px var(--accent); } 50% { box-shadow: 0 0 15px var(--accent); } 100% { box-shadow: 0 0 5px var(--accent); } }
+
+        .animate-in { animation: fadeIn 0.4s ease forwards; }
+        .glitch-text:hover { animation: glitch 0.2s infinite; }
+
+        /* --- AUTH --- */
+        #auth-screen { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; align-items: center; justify-content: center; }
+        .auth-box { background: var(--panel); border: 1px solid var(--accent); padding: 40px; text-align: center; box-shadow: var(--ui-glow); width: 400px; }
 
         /* --- LAYOUT --- */
-        #app { display: none; height: 100vh; flex-direction: column; opacity: 0; transition: opacity 1s ease; }
-        nav {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 40px; height: 70px; background: rgba(0,0,0,0.9);
-            border-bottom: 1px solid var(--border); z-index: 100;
-        }
+        #app { display: none; height: 100vh; flex-direction: column; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 70px; background: rgba(0,0,0,0.9); border-bottom: 1px solid var(--border); }
         #main-container { display: flex; flex: 1; overflow: hidden; }
-        #sidebar {
-            width: var(--sidebar-w); border-right: 1px solid var(--border);
-            padding: 20px; display: flex; flex-direction: column; gap: 10px;
-            background: rgba(0,0,0,0.3);
-        }
-        #content { flex: 1; overflow-y: auto; padding: 30px; position: relative; }
+        #sidebar { width: var(--sidebar-w); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.3); }
+        #content { flex: 1; overflow-y: auto; padding: 30px; scroll-behavior: smooth; }
 
         /* --- UI ELEMENTS --- */
-        .btn {
-            background: transparent; border: 1px solid var(--accent);
-            color: var(--accent); padding: 10px 15px; cursor: pointer;
-            border-radius: 0; font-weight: bold; text-transform: uppercase;
-            transition: 0.2s; font-family: inherit;
-        }
+        .btn { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 10px 15px; cursor: pointer; text-transform: uppercase; transition: 0.2s; font-family: inherit; position: relative; overflow: hidden; }
         .btn:hover { background: var(--accent); color: #000; box-shadow: var(--ui-glow); }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn.active { background: var(--accent); color: #000; }
+        .btn-danger { color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        input, textarea { background: rgba(0,0,0,0.7); border: 1px solid var(--border); color: var(--accent); padding: 12px; margin: 8px 0; width: 100%; outline: none; font-family: inherit; font-size: 14px; }
+        input:focus, textarea:focus { border-color: var(--accent); box-shadow: var(--ui-glow); }
         
-        input, select {
-            background: rgba(0,0,0,0.7); border: 1px solid var(--border);
-            color: var(--accent); padding: 10px; margin: 10px 0; width: 100%;
-            outline: none; font-family: inherit;
-        }
+        /* Hidden file input trick */
+        .file-label { display: block; padding: 10px; border: 1px dashed var(--border); color: var(--accent); cursor: pointer; text-align: center; font-size: 12px; margin: 5px 0; }
+        .file-label:hover { border-color: var(--accent); background: rgba(57, 255, 20, 0.05); }
+        input[type="file"] { display: none; }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--panel); border: 1px solid var(--accent); padding: 30px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; animation: fadeIn 0.3s ease; }
 
         /* --- VIDEO GRID --- */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .v-card {
-            background: var(--panel); border: 1px solid var(--border);
-            transition: 0.3s; cursor: pointer; position: relative;
-        }
-        .v-card:hover { border-color: var(--accent); transform: scale(1.02); }
-        .v-thumb { width: 100%; aspect-ratio: 16/9; background: #000; object-fit: cover; border-bottom: 1px solid var(--border); }
-        .v-info { padding: 12px; }
-        .v-stats { font-size: 10px; opacity: 0.7; margin-top: 5px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        .v-card { background: var(--panel); border: 1px solid var(--border); cursor: pointer; position: relative; transition: 0.3s; }
+        .v-card:hover { border-color: var(--accent); transform: translateY(-5px); box-shadow: var(--ui-glow); }
+        .v-thumb { width: 100%; aspect-ratio: 16/9; background: #111; object-fit: cover; opacity: 0.8; transition: 0.3s; }
+        .v-card:hover .v-thumb { opacity: 1; }
+        .v-info { padding: 15px; border-top: 1px solid var(--border); }
 
         /* --- THEATER --- */
-        #theater {
-            position: fixed; inset: 0; background: #000; z-index: 500;
-            display: none; grid-template-columns: 1fr 350px;
-        }
+        #theater { position: fixed; inset: 0; background: #000; z-index: 500; display: none; grid-template-columns: 1fr 350px; }
         #player-box { background: #000; display: flex; flex-direction: column; }
-        #player-ui { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        video { max-width: 100%; max-height: 100%; box-shadow: 0 0 50px rgba(0,0,0,1); }
-        
-        #comment-sidebar {
-            background: var(--panel); border-left: 1px solid var(--border);
-            display: flex; flex-direction: column; padding: 20px;
-        }
-        #comment-list { flex: 1; overflow-y: auto; margin: 15px 0; font-size: 12px; }
-        .comment-item { border-bottom: 1px solid rgba(57,255,20,0.1); padding: 8px 0; }
+        #comment-sidebar { background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
+        #comment-list { flex: 1; overflow-y: auto; margin: 15px 0; font-size: 13px; scrollbar-width: thin; }
 
-        #sys-msg {
-            position: fixed; bottom: 20px; right: 20px;
-            padding: 8px 15px; background: #000; border: 1px solid var(--accent);
-            z-index: 1000; display: none; font-size: 12px;
-        }
+        /* --- PROFILE --- */
+        .profile-header { display: flex; gap: 30px; align-items: center; margin-bottom: 40px; padding: 30px; background: rgba(57, 255, 20, 0.05); border: 1px solid var(--border); }
+        .pfp-large { width: 120px; height: 120px; border: 2px solid var(--accent); object-fit: cover; border-radius: 4px; box-shadow: var(--ui-glow); }
 
-        .scanline {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            background-size: 100% 4px; pointer-events: none; z-index: 10000;
-        }
+        /* --- TUTORIAL --- */
+        .tut-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        .tut-box { border: 1px solid var(--accent); padding: 40px; background: #000; max-width: 600px; }
     </style>
 </head>
 <body onload="init()">
 
 <canvas id="bg-canvas"></canvas>
 <div class="scanline"></div>
-<div id="sys-msg">STATUS: ONLINE</div>
 
-<!-- Authentication -->
-<div id="auth-screen">
-    <div class="auth-box">
-        <h1 style="color:var(--accent); letter-spacing: 8px; margin:0;">BLINK // OS</h1>
-        <p style="font-size: 10px; opacity: 0.6; margin-bottom: 30px;">SECURE ACCESS GATEWAY V2.2</p>
-        <input type="text" id="user-input" placeholder="[ IDENTITY_ID ]">
-        <input type="password" id="pass-input" placeholder="[ SECURITY_CIPHER ]">
-        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="handleAuth()">LOGIN</button>
+<audio id="bg-music" loop preload="auto">
+    <source src="https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Tutorial Screen -->
+<div id="tutorial" class="tut-overlay">
+    <div class="tut-box animate-in">
+        <h2 id="tut-title" style="color:var(--accent); letter-spacing: 4px;">INITIALIZING_LINK...</h2>
+        <p id="tut-text" style="line-height: 1.6; margin: 20px 0;">Welcome to BLINK // OS. A decentralized transmission network.</p>
+        <button class="btn" id="tut-btn" onclick="nextTutorialStep()">NEXT_SEQUENCE</button>
     </div>
 </div>
 
-<!-- Main App -->
+<!-- Auth -->
+<div id="auth-screen">
+    <div class="auth-box animate-in">
+        <h1 class="glitch-text" style="color:var(--accent); letter-spacing: 12px; margin-bottom: 5px;">BLINK // OS</h1>
+        <p style="font-size: 10px; opacity: 0.6; margin-bottom: 30px; letter-spacing: 2px;">NEURAL_NETWORK_TERMINAL v2.5</p>
+        
+        <div id="login-fields">
+            <input type="text" id="user-input" placeholder="ACCESS_ID (e.g. HackerX)" maxlength="15">
+            <input type="password" id="pass-input" placeholder="SECURE_PASSCODE">
+            <button class="btn" style="width: 100%; margin-top: 15px; animation: pulse 2s infinite;" onclick="handleAuth()">ESTABLISH_LINK</button>
+            <p id="auth-error" style="color:var(--danger); font-size: 10px; margin-top: 10px; height: 12px;"></p>
+        </div>
+    </div>
+</div>
+
 <div id="app">
     <nav>
-        <h2 style="letter-spacing: 4px; margin:0; font-size: 18px;">BLINK // OS</h2>
+        <h2 onclick="setFeed('global')" class="glitch-text" style="cursor:pointer; letter-spacing: 5px; color: var(--accent);">BLINK // OS</h2>
         <div style="display:flex; gap: 20px; align-items: center;">
-            <button class="btn" onclick="openUpload()">TRANSMIT DATA</button>
-            <span id="nav-user" style="color: var(--accent); font-size: 14px;"></span>
+            <button id="guide-transmit" class="btn" onclick="openModal('upload-modal')">NEW_TRANSMISSION</button>
+            <div id="nav-user" onclick="setFeed('profile')" style="cursor:pointer; color: var(--accent); font-size: 14px; border-bottom: 1px dashed var(--accent);"></div>
         </div>
     </nav>
 
     <div id="main-container">
         <div id="sidebar">
-            <button class="btn" style="text-align: left;" onclick="setFeed('global')">> GLOBAL_STREAM</button>
-            <button class="btn" style="text-align: left;" onclick="setFeed('trending')">> TRENDING_NODES</button>
-            
-            <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
-                <label style="font-size: 10px; opacity: 0.5;">INTERFACE_SKIN</label>
-                <select onchange="document.body.className = this.value">
-                    <option value="">LITHIUM_GREEN</option>
-                    <option value="theme-red">ALARM_RED</option>
-                    <option value="theme-blue">CYBER_BLUE</option>
-                    <option value="theme-void">VOID_WHITE</option>
-                </select>
-                <button class="btn" style="width: 100%; margin-top: 10px; color: var(--danger); border-color: var(--danger);" onclick="location.reload()">TERMINATE_SESSION</button>
+            <button class="btn" id="btn-global" onclick="setFeed('global')">> GLOBAL_STREAM</button>
+            <button class="btn" id="btn-trending" onclick="setFeed('trending')">> TRENDING_NODES</button>
+            <button class="btn" id="btn-profile" onclick="setFeed('profile')">> MY_CHANNEL</button>
+            <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
+                <button class="btn" style="width: 100%; font-size: 10px;" onclick="toggleAudio()" id="audio-toggle">AUDIO: ON</button>
+                <button class="btn" style="width: 100%; font-size: 10px; margin-top: 5px;" onclick="location.reload()">LOGOUT</button>
             </div>
         </div>
 
         <div id="content">
-            <h3 id="feed-title" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top:0;">ACCESSING: GLOBAL_STREAM</h3>
-            <div id="video-grid" class="grid"></div>
+            <div id="feed-container" class="animate-in">
+                <h3 id="feed-title" style="margin-top:0; letter-spacing: 2px; color: var(--accent);">ACCESSING: GLOBAL_STREAM</h3>
+                <div id="video-grid" class="grid"></div>
+            </div>
+
+            <div id="profile-container" style="display:none;" class="animate-in">
+                <div class="profile-header">
+                    <img id="p-pfp" class="pfp-large" src="">
+                    <div>
+                        <h2 id="p-name" style="margin:0; color:var(--accent); letter-spacing: 3px;"></h2>
+                        <p id="p-bio" style="font-size: 14px; opacity: 0.8; margin: 10px 0;"></p>
+                        <div id="p-stats" style="font-size: 11px; color:var(--accent); font-weight: bold;"></div>
+                        <button class="btn" style="margin-top:15px; font-size: 10px;" onclick="openModal('edit-profile-modal')">EDIT_CHANNEL_DATA</button>
+                    </div>
+                </div>
+                <h4 style="letter-spacing: 2px; border-left: 3px solid var(--accent); padding-left: 10px;">MY_LOGGED_TRANSMISSIONS</h4>
+                <div id="my-video-grid" class="grid" style="margin-top: 20px;"></div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Theater Mode -->
-<div id="theater">
-    <div id="player-box">
-        <div style="padding: 10px 20px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; border-bottom: 1px solid var(--border);">
-            <button class="btn" onclick="closeTheater()">EXIT_THEATER</button>
-            <h4 id="theater-title" style="margin: 0; color: var(--accent); align-self: center; letter-spacing: 2px;"></h4>
+<!-- Modal: Upload -->
+<div id="upload-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="color:var(--accent); margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">DATA_TRANSMISSION</h3>
+        <div style="margin-top: 15px;">
+            <label style="font-size: 11px; color: var(--accent);">TITLE_METADATA</label>
+            <input type="text" id="v-title" placeholder="Transmission Subject...">
+
+            <label style="font-size: 11px; color: var(--accent);">DESCRIPTION_TRANSCRIPT</label>
+            <textarea id="v-desc" placeholder="Details of this capture..." rows="3"></textarea>
+            
+            <label style="font-size: 11px; color: var(--accent);">VIDEO_FILE (Local Upload)</label>
+            <label for="v-file-input" class="file-label" id="v-file-label">SELECT_MP4_FILE</label>
+            <input type="file" id="v-file-input" accept="video/mp4,video/webm">
+            
+            <label style="font-size: 11px; color: var(--accent);">THUMBNAIL_IMAGE</label>
+            <label for="v-thumb-input" class="file-label" id="v-thumb-label">SELECT_IMAGE_FILE</label>
+            <input type="file" id="v-thumb-input" accept="image/*">
         </div>
-        <div id="player-ui">
-            <video id="main-video" controls autoplay></video>
-        </div>
-        <div style="padding: 20px; background: rgba(0,0,0,0.8); border-top: 1px solid var(--border); display: flex; justify-content: space-between;">
-            <div>
-                <button id="blink-btn" class="btn" onclick="addBlink()">BLINK [ <span id="blink-count">0</span> ]</button>
-            </div>
-            <div id="theater-author" style="font-size: 12px; opacity: 0.7;"></div>
+        <div style="display:flex; gap:10px; margin-top:25px;">
+            <button class="btn" id="upload-submit-btn" style="flex:1" onclick="submitVideo()">INITIATE_BROADCAST</button>
+            <button class="btn btn-danger" onclick="closeModal('upload-modal')">ABORT</button>
         </div>
     </div>
-    
+</div>
+
+<!-- Modal: Edit Profile -->
+<div id="edit-profile-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="color:var(--accent); margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">CHANNEL_CONFIG</h3>
+        <div style="margin-top: 15px;">
+            <label style="font-size: 11px; color: var(--accent);">IDENTITY_NAME</label>
+            <input type="text" id="edit-name">
+            
+            <label style="font-size: 11px; color: var(--accent);">BIO_TRANSCRIPT</label>
+            <textarea id="edit-bio" rows="4"></textarea>
+            
+            <label style="font-size: 11px; color: var(--accent);">AVATAR_UPLOAD</label>
+            <label for="edit-pfp-input" class="file-label" id="edit-pfp-label">CHANGE_PFP_IMAGE</label>
+            <input type="file" id="edit-pfp-input" accept="image/*">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:25px;">
+            <button class="btn" style="flex:1" onclick="saveProfile()">WRITE_TO_BLOCKCHAIN</button>
+            <button class="btn btn-danger" onclick="closeModal('edit-profile-modal')">EXIT_CONFIG</button>
+        </div>
+    </div>
+</div>
+
+<!-- Theater -->
+<div id="theater">
+    <div id="player-box">
+        <div style="padding: 15px 30px; background: rgba(0,0,0,0.95); display: flex; justify-content: space-between; border-bottom: 1px solid var(--border);">
+            <button class="btn" onclick="closeTheater()">< BACK_TO_STREAM</button>
+            <h4 id="theater-title" style="margin: 0; color: var(--accent); align-self: center; letter-spacing: 2px;"></h4>
+        </div>
+        <div style="flex:1; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #111 0%, #000 100%);">
+            <video id="main-video" controls autoplay style="max-height: 70vh; max-width: 95%; box-shadow: 0 0 50px rgba(0,0,0,0.5);"></video>
+        </div>
+        <div style="padding: 20px 40px; background: rgba(0,0,0,0.95); border-top: 1px solid var(--border);">
+            <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <button id="blink-btn" class="btn" style="min-width: 150px;" onclick="toggleBlink()">BLINK_NODE [ <span id="blink-count">0</span> ]</button>
+                <div id="theater-author" style="font-size: 12px; color: var(--accent); opacity: 0.7; font-style: italic;"></div>
+            </div>
+            <p id="theater-desc" style="font-size: 13px; color: #fff; line-height: 1.5; margin: 10px 0; border-left: 1px solid var(--border); padding-left: 15px;"></p>
+        </div>
+    </div>
     <div id="comment-sidebar">
-        <h5 style="margin:0; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px;">DATA_COMMENTS</h5>
+        <h5 style="margin:0; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 15px; letter-spacing: 2px;">COMMS_FEED</h5>
         <div id="comment-list"></div>
-        <div style="display:flex; gap: 5px;">
-            <input type="text" id="com-input" placeholder="Add entry..." style="margin:0;">
-            <button class="btn" onclick="addComment()">SEND</button>
+        <div style="display:flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="com-input" placeholder="Inject message..." style="margin:0;">
+            <button class="btn" style="width: 100%;" onclick="addComment()">SEND_ENCRYPTED</button>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, increment, query, arrayUnion } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, increment, getDoc, setDoc, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-    /* --- GITHUB PAGES FIREBASE CONFIG ---
-      Replace the values below with the ones from your Firebase Console.
-      Path: Project Settings -> General -> Your Apps -> Web App (SDK Setup and Config)
-    */
-    const myFirebaseConfig = {
-        apiKey: "AIzaSyDf6xMlCv_FeM6OWyQZcDPiZgazvWAgLQY",
-        authDomain: "blink-os.firebaseapp.com",
-        projectId: "blink-os",
-        storageBucket: "blink-os.firebasestorage.app",
-        messagingSenderId: "111563521938",
-        appId: "1:111563521938:web:46b4650d6de68f97164b4b"
-    };
-
-    // Environment Detection: Uses Canvas config if available, otherwise uses yours
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
-
+    const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'blink-os-live-node';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'blink-os-v25-pro-secure';
 
-    let userSession = null;
+    let userProfile = { name: '', bio: '', pfp: '', blinksRec: 0, uid: '' };
     let videos = [];
     let currentVideoId = null;
     let currentFeed = 'global';
-    let videosUnsubscribe = null;
+    let audioEnabled = true;
+    let unsubscribeVideos = null;
+    let tutStep = 0;
 
-    // Background Canvas Animation
-    const canvas = document.getElementById('bg-canvas');
-    const ctx = canvas.getContext('2d');
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resize);
-    resize();
+    // Simulated file storage URLs
+    let pendingVideoUrl = '';
+    let pendingThumbUrl = '';
+    let pendingPfpUrl = '';
 
-    function draw() {
-        ctx.fillStyle = 'rgba(2, 5, 2, 0.15)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent');
-        for(let i=0; i<15; i++) {
-            ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
-        }
-        requestAnimationFrame(draw);
-    }
-    draw();
-
-    // Critical Auth Initialization
-    window.init = async () => {
+    const safePlayAudio = async () => {
+        const audio = document.getElementById('bg-music');
+        if (!audio || !audioEnabled) return;
         try {
-            // Priority 1: Canvas/Environment Auth
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                // Priority 2: Anonymous Login for your own GitHub Pages site
-                await signInAnonymously(auth);
-            }
-        } catch (e) { 
-            console.error("Auth Failure. Ensure Anonymous Auth is enabled in your Firebase Dashboard.", e);
+            await audio.play();
+        } catch (err) {
+            if (err.name !== 'AbortError') console.error("Audio error:", err);
         }
     };
 
-    // Watch for Auth to trigger data listeners
+    window.init = async () => {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+    };
+
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            setupDataSync();
-            const sys = document.getElementById('sys-msg');
-            sys.innerText = "STATUS: CONNECTION SECURE";
-            sys.style.display = "block";
+            if (unsubscribeVideos) unsubscribeVideos();
+            syncVideos();
         }
     });
 
-    function setupDataSync() {
-        if (videosUnsubscribe) videosUnsubscribe();
-        
-        // Firestore Path Rule: /artifacts/{appId}/public/data/{collection}
+    function syncVideos() {
         const vCol = collection(db, 'artifacts', appId, 'public', 'data', 'videos');
-        
-        videosUnsubscribe = onSnapshot(vCol, (snap) => {
+        unsubscribeVideos = onSnapshot(vCol, (snap) => {
             videos = snap.docs.map(d => ({id: d.id, ...d.data()}));
-            renderVideos();
+            render();
             if (currentVideoId) updateTheaterUI();
-        }, (err) => {
-            console.error("Sync Error. Check Firestore Rules and Config:", err);
-            const sys = document.getElementById('sys-msg');
-            sys.innerText = "ERROR: CLOUD SYNC FAILED";
-            sys.style.color = "var(--danger)";
-        });
+        }, (err) => console.error("Stream Error:", err));
     }
 
-    window.handleAuth = () => {
-        const id = document.getElementById('user-input').value.trim();
-        if (!id) return;
-        userSession = { username: id.toLowerCase() };
-        document.getElementById('nav-user').innerText = `USER: ${id.toUpperCase()}`;
+    // --- FILE UPLOAD SIMULATION ---
+    document.getElementById('v-file-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            pendingVideoUrl = URL.createObjectURL(file);
+            document.getElementById('v-file-label').innerText = `READY: ${file.name.substring(0, 15)}...`;
+        }
+    };
+
+    document.getElementById('v-thumb-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            pendingThumbUrl = URL.createObjectURL(file);
+            document.getElementById('v-thumb-label').innerText = `READY: ${file.name.substring(0, 15)}...`;
+        }
+    };
+
+    document.getElementById('edit-pfp-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            pendingPfpUrl = URL.createObjectURL(file);
+            document.getElementById('edit-pfp-label').innerText = `READY: ${file.name.substring(0, 15)}...`;
+        }
+    };
+
+    // --- AUTH & SECURITY ---
+    window.handleAuth = async () => {
+        const id = document.getElementById('user-input').value.trim().replace(/\s+/g, '_');
+        const pass = document.getElementById('pass-input').value.trim();
+        const errEl = document.getElementById('auth-error');
+
+        if (!id || !pass) {
+            errEl.innerText = "ERROR: ID_AND_PASSCODE_REQUIRED";
+            return;
+        }
+        
+        const uRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', id.toLowerCase());
+        const uSnap = await getDoc(uRef);
+        
+        if (uSnap.exists()) {
+            const data = uSnap.data();
+            if (data.passcode !== pass) {
+                errEl.innerText = "ERROR: INVALID_CREDENTIALS";
+                return;
+            }
+            userProfile = { uid: id.toLowerCase(), ...data };
+        } else {
+            // Register new user
+            userProfile = { 
+                uid: id.toLowerCase(), 
+                name: id, 
+                passcode: pass,
+                bio: 'IDENTITY_UNDEFINED // OPERATOR_NEW', 
+                pfp: 'https://api.dicebear.com/7.x/bottts/svg?seed=' + id, 
+                blinksRec: 0 
+            };
+            await setDoc(uRef, userProfile);
+        }
+
+        document.getElementById('nav-user').innerText = `NODE: ${userProfile.name.toUpperCase()}`;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
-        setTimeout(() => document.getElementById('app').style.opacity = '1', 50);
+        document.getElementById('tutorial').style.display = 'flex';
+    };
+
+    window.saveProfile = async () => {
+        const name = document.getElementById('edit-name').value;
+        const bio = document.getElementById('edit-bio').value;
+        
+        if (pendingPfpUrl) userProfile.pfp = pendingPfpUrl;
+        userProfile.name = name;
+        userProfile.bio = bio;
+
+        const uRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userProfile.uid);
+        await updateDoc(uRef, { name, bio, pfp: userProfile.pfp });
+        
+        document.getElementById('nav-user').innerText = `NODE: ${name.toUpperCase()}`;
+        closeModal('edit-profile-modal');
+        updateProfileUI();
+        render();
+        // Reset label
+        document.getElementById('edit-pfp-label').innerText = "CHANGE_PFP_IMAGE";
+    };
+
+    // --- RENDERING & NAVIGATION ---
+    const tutorialSteps = [
+        { title: "LINK_ESTABLISHED", text: "Welcome Operator. Your node is now live on the grid." },
+        { title: "SECURE_BROADCAST", text: "You can now upload files directly from your device. Transmissions include titles and full descriptions." },
+        { title: "NEURAL_LINK", text: "Blink at transmissions you support to boost a user's reputation." },
+        { title: "GO_DARK", text: "Initialization complete." }
+    ];
+
+    window.nextTutorialStep = () => {
+        tutStep++;
+        if (tutStep >= tutorialSteps.length) {
+            document.getElementById('tutorial').style.display = 'none';
+            safePlayAudio();
+            return;
+        }
+        const step = tutorialSteps[tutStep];
+        document.getElementById('tut-title').innerText = step.title;
+        document.getElementById('tut-text').innerText = step.text;
+        if (tutStep === tutorialSteps.length - 1) document.getElementById('tut-btn').innerText = "ENTER_THE_GRID";
     };
 
     window.setFeed = (type) => {
         currentFeed = type;
-        document.getElementById('feed-title').innerText = `ACCESSING: ${type.toUpperCase()}_STREAM`;
-        renderVideos();
+        document.querySelectorAll('#sidebar .btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById(`btn-${type}`);
+        if(activeBtn) activeBtn.classList.add('active');
+
+        const feedCont = document.getElementById('feed-container');
+        const profCont = document.getElementById('profile-container');
+
+        if (type === 'profile') {
+            feedCont.style.display = 'none';
+            profCont.style.display = 'block';
+            updateProfileUI();
+        } else {
+            feedCont.style.display = 'block';
+            profCont.style.display = 'none';
+            document.getElementById('feed-title').innerText = `ACCESSING: ${type.toUpperCase()}_STREAM`;
+            render();
+        }
+        document.getElementById('content').scrollTop = 0;
     };
 
-    function renderVideos() {
+    function updateProfileUI() {
+        document.getElementById('p-pfp').src = userProfile.pfp;
+        document.getElementById('p-name').innerText = userProfile.name.toUpperCase();
+        document.getElementById('p-bio').innerText = userProfile.bio;
+        document.getElementById('p-stats').innerText = `REPUTATION_SCORE: ${userProfile.blinksRec} BLINKS`;
+        
+        document.getElementById('edit-name').value = userProfile.name;
+        document.getElementById('edit-bio').value = userProfile.bio;
+        
+        renderMyVideos();
+    }
+
+    function render() {
         const grid = document.getElementById('video-grid');
+        if (!grid || currentFeed === 'profile') return;
         grid.innerHTML = '';
         
         let displayList = [...videos];
-        
         if (currentFeed === 'trending') {
-            displayList.sort((a,b) => {
-                const scoreA = (a.blinks || 0) + (a.comments?.length || 0);
-                const scoreB = (b.blinks || 0) + (b.comments?.length || 0);
-                return scoreB - scoreA;
-            });
+            displayList.sort((a,b) => ((b.blinks || 0) + (b.comments?.length || 0)) - ((a.blinks || 0) + (a.comments?.length || 0)));
         } else {
-            displayList.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            displayList.sort((a,b) => b.timestamp - a.timestamp);
         }
 
-        displayList.forEach(v => {
-            const el = document.createElement('div');
-            el.className = 'v-card';
-            el.onclick = () => openTheater(v.id);
-            const thumbColor = getComputedStyle(document.body).getPropertyValue('--accent').trim().replace('#', '');
-            el.innerHTML = `
-                <img class="v-thumb" src="https://via.placeholder.com/400x225/000/${thumbColor}/?text=NODE_${v.id.substring(0,4)}">
-                <div class="v-info">
-                    <div style="font-weight:bold; color:var(--accent); text-transform:uppercase;">${v.title}</div>
-                    <div style="font-size:10px; opacity:0.5;">SOURCE: ${v.author}</div>
-                    <div class="v-stats">BLINKS: ${v.blinks || 0} // COMMS: ${v.comments?.length || 0}</div>
-                </div>
-            `;
-            grid.appendChild(el);
+        displayList.forEach(v => grid.appendChild(createCard(v)));
+    }
+
+    function renderMyVideos() {
+        const grid = document.getElementById('my-video-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        videos.filter(v => v.authorId === userProfile.uid).forEach(v => {
+            grid.appendChild(createCard(v, true));
         });
     }
+
+    function createCard(v, canDelete = false) {
+        const el = document.createElement('div');
+        el.className = 'v-card animate-in';
+        el.innerHTML = `
+            <img class="v-thumb" src="${v.thumb || 'https://via.placeholder.com/400x225/000/39ff14?text=ENCRYPTED_STREAM'}" onerror="this.src='https://via.placeholder.com/400x225/000/39ff14?text=ENCRYPTED_STREAM'">
+            <div class="v-info">
+                <div style="font-weight:bold; color:var(--accent); font-size: 14px; margin-bottom: 5px;">${v.title}</div>
+                <div style="font-size:10px; opacity:0.6; display:flex; justify-content:space-between;">
+                    <span>BY: ${v.author}</span>
+                    <span style="color:var(--accent)">${v.blinks || 0} BLINKS</span>
+                </div>
+                ${canDelete ? `<button class="btn btn-danger" style="width:100%; margin-top:12px; font-size:9px;" onclick="event.stopPropagation(); deleteVideo('${v.id}')">PURGE_DATA</button>` : ''}
+            </div>
+        `;
+        el.onclick = () => openTheater(v.id);
+        return el;
+    }
+
+    // --- ACTIONS ---
+    window.submitVideo = async () => {
+        const title = document.getElementById('v-title').value.trim();
+        const desc = document.getElementById('v-desc').value.trim();
+
+        if(!title || !pendingVideoUrl) {
+            alert("TITLE AND VIDEO FILE ARE REQUIRED FOR BROADCAST.");
+            return;
+        }
+
+        document.getElementById('upload-submit-btn').innerText = "UPLOADING...";
+        document.getElementById('upload-submit-btn').disabled = true;
+
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'videos'), {
+            title, 
+            description: desc || 'NO_TRANSCRIPT_PROVIDED',
+            url: pendingVideoUrl, 
+            thumb: pendingThumbUrl, 
+            author: userProfile.name,
+            authorId: userProfile.uid,
+            timestamp: Date.now(),
+            blinks: 0,
+            blinkers: [],
+            comments: []
+        });
+
+        closeModal('upload-modal');
+        document.getElementById('v-title').value = '';
+        document.getElementById('v-desc').value = '';
+        document.getElementById('v-file-label').innerText = "SELECT_MP4_FILE";
+        document.getElementById('v-thumb-label').innerText = "SELECT_IMAGE_FILE";
+        document.getElementById('upload-submit-btn').innerText = "INITIATE_BROADCAST";
+        document.getElementById('upload-submit-btn').disabled = false;
+        pendingVideoUrl = '';
+        pendingThumbUrl = '';
+    };
 
     window.openTheater = (id) => {
         currentVideoId = id;
         const v = videos.find(x => x.id === id);
-        if (!v) return;
+        if(!v) return;
 
         document.getElementById('theater-title').innerText = v.title.toUpperCase();
-        document.getElementById('theater-author').innerText = `NODE_ORIGIN: ${v.author}`;
-        const vidElement = document.getElementById('main-video');
-        vidElement.src = v.url;
+        document.getElementById('theater-author').innerText = `ENCRYPTED_BY: ${v.author}`;
+        document.getElementById('theater-desc').innerText = v.description || 'NO_TRANSCRIPT';
+        document.getElementById('main-video').src = v.url;
         document.getElementById('theater').style.display = 'grid';
+        
+        const bgMusic = document.getElementById('bg-music');
+        if (bgMusic) bgMusic.volume = 0.05;
+        
         updateTheaterUI();
+    };
+
+    window.closeTheater = () => {
+        const mainVideo = document.getElementById('main-video');
+        if (mainVideo) mainVideo.pause();
+        document.getElementById('theater').style.display = 'none';
+        const bgMusic = document.getElementById('bg-music');
+        if (bgMusic) bgMusic.volume = 1.0;
+        currentVideoId = null;
+    };
+
+    window.deleteVideo = async (id) => {
+        if(!confirm("ARE YOU SURE YOU WANT TO PURGE THIS DATA FROM THE GRID?")) return;
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'videos', id));
+    };
+
+    window.toggleBlink = async () => {
+        const v = videos.find(x => x.id === currentVideoId);
+        if(!v) return;
+        const vRef = doc(db, 'artifacts', appId, 'public', 'data', 'videos', currentVideoId);
+        const uRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', v.authorId);
+        const hasBlinked = v.blinkers?.includes(userProfile.uid);
+
+        if(hasBlinked) {
+            await updateDoc(vRef, { blinks: increment(-1), blinkers: arrayRemove(userProfile.uid) });
+            await updateDoc(uRef, { blinksRec: increment(-1) });
+        } else {
+            await updateDoc(vRef, { blinks: increment(1), blinkers: arrayUnion(userProfile.uid) });
+            await updateDoc(uRef, { blinksRec: increment(1) });
+        }
+    };
+
+    window.addComment = async () => {
+        const text = document.getElementById('com-input').value.trim();
+        if(!text || !currentVideoId) return;
+        const vRef = doc(db, 'artifacts', appId, 'public', 'data', 'videos', currentVideoId);
+        await updateDoc(vRef, {
+            comments: arrayUnion({ user: userProfile.name, text, time: Date.now() })
+        });
+        document.getElementById('com-input').value = '';
     };
 
     function updateTheaterUI() {
         const v = videos.find(x => x.id === currentVideoId);
-        if (!v) return;
-        
+        if(!v) return;
         document.getElementById('blink-count').innerText = v.blinks || 0;
+        document.getElementById('blink-btn').classList.toggle('active', v.blinkers?.includes(userProfile.uid));
+        
         const list = document.getElementById('comment-list');
         list.innerHTML = (v.comments || []).map(c => `
-            <div class="comment-item">
-                <span style="color:var(--accent)">[${c.user}]</span>: ${c.text}
+            <div style="border-bottom:1px solid rgba(57,255,20,0.05); padding:8px 0;">
+                <span style="color:var(--accent); font-weight: bold;">[${c.user}]</span>: ${c.text}
             </div>
         `).join('');
         list.scrollTop = list.scrollHeight;
     }
 
-    window.closeTheater = () => {
-        const vid = document.getElementById('main-video');
-        vid.pause();
-        document.getElementById('theater').style.display = 'none';
-        currentVideoId = null;
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+    window.toggleAudio = () => {
+        audioEnabled = !audioEnabled;
+        const m = document.getElementById('bg-music');
+        if (!m) return;
+        audioEnabled ? safePlayAudio() : m.pause();
+        document.getElementById('audio-toggle').innerText = `AUDIO: ${audioEnabled ? 'ON' : 'OFF'}`;
     };
 
-    window.addBlink = async () => {
-        if (!currentVideoId || !auth.currentUser) return;
-        const btn = document.getElementById('blink-btn');
-        btn.disabled = true;
-        try {
-            const vRef = doc(db, 'artifacts', appId, 'public', 'data', 'videos', currentVideoId);
-            await updateDoc(vRef, { blinks: increment(1) });
-        } catch (e) { console.error(e); }
-        btn.disabled = false;
-    };
-
-    window.addComment = async () => {
-        const input = document.getElementById('com-input');
-        const text = input.value.trim();
-        if (!text || !currentVideoId || !auth.currentUser) return;
-
-        try {
-            const vRef = doc(db, 'artifacts', appId, 'public', 'data', 'videos', currentVideoId);
-            await updateDoc(vRef, {
-                comments: arrayUnion({
-                    user: userSession.username,
-                    text: text,
-                    time: Date.now()
-                })
-            });
-            input.value = '';
-        } catch (e) { console.error(e); }
-    };
-
-    window.openUpload = async () => {
-        if (!auth.currentUser) return;
-        const title = prompt("ENTER TRANSMISSION TITLE:");
-        const url = prompt("ENTER DATA URL (Direct MP4 Link):");
-        if (title && url) {
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'videos'), {
-                    title, url, author: userSession.username, timestamp: Date.now(),
-                    blinks: 0, comments: []
-                });
-            } catch (e) { console.error("Broadcast failed:", e); }
+    // Canvas FX
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+    function draw() {
+        ctx.fillStyle = 'rgba(2, 5, 2, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent');
+        for(let i=0; i<5; i++) {
+            const size = Math.random() * 2;
+            ctx.globalAlpha = Math.random();
+            ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, size, size);
         }
-    };
+        ctx.globalAlpha = 1.0;
+        requestAnimationFrame(draw);
+    }
+    draw();
 </script>
 </body>
 </html>
